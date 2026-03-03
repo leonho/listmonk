@@ -121,14 +121,14 @@ func (s JSON) Value() (driver.Value, error) {
 }
 
 // Scan unmarshals JSONB from the DB.
-func (s JSON) Scan(b any) error {
+func (s *JSON) Scan(b any) error {
 	if b == nil {
-		s = make(JSON)
+		*s = make(JSON)
 		return nil
 	}
 
 	if data, ok := b.([]byte); ok {
-		return json.Unmarshal(data, &s)
+		return json.Unmarshal(data, s)
 	}
 	return fmt.Errorf("could not not decode type %T -> %T", b, s)
 }

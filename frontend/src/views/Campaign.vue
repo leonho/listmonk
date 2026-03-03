@@ -81,6 +81,23 @@
                 <list-selector v-model="form.lists" :selected="form.lists" :all="lists.results" :disabled="!canEdit"
                   :label="$t('globals.terms.lists')" :placeholder="$t('campaigns.sendToLists')" />
 
+                <!-- [FORK] Subscriber attribute filter -->
+                <div style="margin-top: -0.75rem; margin-bottom: 0.75rem;">
+                  <p class="has-text-right" style="margin-bottom: 0.5rem;">
+                    <a href="#" @click.prevent="isAttribFilterVisible = !isAttribFilterVisible">
+                      <b-icon icon="plus" />Filter by subscriber attributes
+                    </a>
+                  </p>
+                  <b-field v-if="isAttribFilterVisible || form.subscriberAttribFilterStr !== '{}'"
+                    label="Subscriber attribute filter"
+                    label-position="on-border"
+                    message="Only send to subscribers matching these attributes. e.g. {&quot;segment&quot;: &quot;hot&quot;}">
+                    <b-input v-model="form.subscriberAttribFilterStr" type="textarea" rows="2"
+                      placeholder="{&quot;segment&quot;: &quot;hot&quot;}"
+                      :disabled="!canEdit" />
+                  </b-field>
+                </div>
+
                 <div class="columns">
                   <div class="column is-6">
                     <b-field :label="$tc('globals.terms.messenger')" label-position="on-border">
@@ -332,6 +349,9 @@ import Editor from '../components/Editor.vue';
 import ListSelector from '../components/ListSelector.vue';
 import Media from './Media.vue';
 
+// [FORK] Key used in campaign attribs to store subscriber attribute filter.
+const SUB_FILTER_KEY = '_subscriber_filter';
+
 export default Vue.extend({
   components: {
     ListSelector,
@@ -356,6 +376,7 @@ export default Vue.extend({
       isHeadersVisible: false,
       isAttachFieldVisible: false,
       isAttachModalOpen: false,
+      isAttribFilterVisible: false,
       isPreviewingArchive: false,
       activeTab: 'campaign',
 
@@ -390,6 +411,7 @@ export default Vue.extend({
         sendAtDate: null,
         sendLater: false,
         archive: false,
+        subscriberAttribFilterStr: '{}',
         archiveMetaStr: '{}',
         archiveMeta: {},
         testEmails: [],
@@ -496,6 +518,21 @@ export default Vue.extend({
           return;
         }
       }
+
+      // [FORK] Merge subscriber attrib filter into attribs under _subscriber_filter key.
+      if (this.form.subscriberAttribFilterStr && this.form.subscriberAttribFilterStr.trim() !== '{}') {
+        try {
+          const subFilter = JSON.parse(this.form.subscriberAttribFilterStr);
+          if (!attribs) attribs = {};
+          attribs[SUB_FILTER_KEY] = subFilter;
+        } catch (e) {
+          this.$utils.toast(`Invalid subscriber filter JSON: ${e.toString()}`, 'is-danger', 3000);
+          return;
+        }
+      } else if (attribs) {
+        delete attribs[SUB_FILTER_KEY];
+      }
+
       this.form.attribs = attribs;
 
       switch (typ) {
@@ -520,6 +557,8 @@ export default Vue.extend({
           headersStr: JSON.stringify(data.headers, null, 4),
           archiveMetaStr: data.archiveMeta ? JSON.stringify(data.archiveMeta, null, 4) : '{}',
           attribsStr: data.attribs ? JSON.stringify(data.attribs, null, 4) : '{}',
+          subscriberAttribFilterStr: (data.attribs && data.attribs[SUB_FILTER_KEY])
+            ? JSON.stringify(data.attribs[SUB_FILTER_KEY], null, 4) : '{}',
 
           // The structure that is populated by editor input event.
           content: {
@@ -530,6 +569,7 @@ export default Vue.extend({
           },
         };
         this.isAttachFieldVisible = this.form.media.length > 0;
+        this.isAttribFilterVisible = !!(data.attribs && data.attribs[SUB_FILTER_KEY]);
 
         this.form.media = this.form.media.map((f) => {
           if (!f.id) {
