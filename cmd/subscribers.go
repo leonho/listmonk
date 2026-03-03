@@ -26,15 +26,16 @@ const (
 // subQueryReq is a "catch all" struct for reading various
 // subscriber related requests.
 type subQueryReq struct {
-	Search             string `json:"search"`
-	Query              string `json:"query"`
-	ListIDs            []int  `json:"list_ids"`
-	TargetListIDs      []int  `json:"target_list_ids"`
-	SubscriberIDs      []int  `json:"ids"`
-	Action             string `json:"action"`
-	Status             string `json:"status"`
-	SubscriptionStatus string `json:"subscription_status"`
-	All                bool   `json:"all"`
+	Search             string          `json:"search"`
+	Query              string          `json:"query"`
+	ListIDs            []int           `json:"list_ids"`
+	TargetListIDs      []int           `json:"target_list_ids"`
+	SubscriberIDs      []int           `json:"ids"`
+	Action             string          `json:"action"`
+	Status             string          `json:"status"`
+	SubscriptionStatus string          `json:"subscription_status"`
+	All                bool            `json:"all"`
+	Attribs            json.RawMessage `json:"attribs"`
 }
 
 // subOptin contains the data that's passed to the double opt-in e-mail template.
@@ -544,6 +545,43 @@ func (a *App) ManageSubscriberListsByQuery(c echo.Context) error {
 	}
 
 	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, okResp{true})
+}
+
+// UpdateSubscriberAttribsByQuery bulk merges JSON attribs into subscribers
+// matching an arbitrary SQL expression.
+func (a *App) UpdateSubscriberAttribsByQuery(c echo.Context) error {
+	user := auth.GetUser(c)
+
+	var req subQueryReq
+	if err := c.Bind(&req); err != nil {
+		return err
+	}
+	if len(req.Attribs) == 0 {
+		return echo.NewHTTPError(http.StatusBadRequest,
+			a.i18n.Ts("globals.messages.invalidFields", "name", "attribs"))
+	}
+
+	req.Search = strings.TrimSpace(req.Search)
+	req.Query = formatSQLExp(req.Query)
+	if req.All {
+		req.Search = ""
+		req.Query = ""
+	} else if req.Search == "" && req.Query == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, a.i18n.Ts("globals.messages.invalidFields", "name", "query"))
+	}
+
+	if req.Query != "" {
+		if !user.HasPerm(auth.PermSubscribersSqlQuery) {
+			return echo.NewHTTPError(http.StatusForbidden,
+				a.i18n.Ts("globals.messages.permissionDenied", "name", auth.PermSubscribersSqlQuery))
+		}
+	}
+
+	if err := a.core.UpdateSubscriberAttribsByQuery(req.Search, req.Query, req.ListIDs, req.SubscriptionStatus, req.Attribs); err != nil {
 		return err
 	}
 

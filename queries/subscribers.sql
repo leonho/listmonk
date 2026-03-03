@@ -395,6 +395,12 @@ UPDATE subscriber_lists SET status='unsubscribed', updated_at=NOW()
     WHERE (subscriber_id, list_id) = ANY(SELECT a, b FROM UNNEST(ARRAY(SELECT id FROM subs)) a, UNNEST($5::INT[]) b);
 
 
+-- name: update-subscriber-attribs-by-query
+-- raw: true
+WITH subs AS (%query%)
+UPDATE subscribers SET attribs = attribs || $5::jsonb, updated_at=NOW()
+    WHERE id = ANY(SELECT id FROM subs);
+
 -- privacy
 -- name: export-subscriber-data
 WITH prof AS (

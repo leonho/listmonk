@@ -49,6 +49,7 @@ type Queries struct {
 	BlocklistSubscribersByQuery            string     `query:"blocklist-subscribers-by-query"`
 	DeleteSubscriptionsByQuery             string     `query:"delete-subscriptions-by-query"`
 	UnsubscribeSubscribersFromListsByQuery string     `query:"unsubscribe-subscribers-from-lists-by-query"`
+	UpdateSubscriberAttribsByQuery         string     `query:"update-subscriber-attribs-by-query"`
 
 	CreateList      *sqlx.Stmt `query:"create-list"`
 	QueryLists      string     `query:"query-lists"`

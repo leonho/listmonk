@@ -141,6 +141,7 @@ func initHTTPHandlers(e *echo.Echo, a *App) {
 		g.POST("/api/subscribers/query/delete", pm(a.DeleteSubscribersByQuery, "subscribers:manage"))
 		g.PUT("/api/subscribers/query/blocklist", pm(a.BlocklistSubscribersByQuery, "subscribers:manage"))
 		g.PUT("/api/subscribers/query/lists", pm(a.ManageSubscriberListsByQuery, "subscribers:manage"))
+		g.PUT("/api/subscribers/query/attribs", pm(a.UpdateSubscriberAttribsByQuery, "subscribers:manage"))
 		g.GET("/api/subscribers/export",
 			pm(middleware.GzipWithConfig(middleware.GzipConfig{Level: 9})(a.ExportSubscribers), "subscribers:get_all", "subscribers:get"))
 

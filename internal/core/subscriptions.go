@@ -1,6 +1,7 @@
 package core
 
 import (
+	"encoding/json"
 	"net/http"
 	"time"
 
@@ -100,6 +101,22 @@ func (c *Core) UnsubscribeListsByQuery(searchStr, queryExp string, sourceListIDs
 	err := c.q.ExecSubQueryTpl(searchStr, queryExp, c.q.UnsubscribeSubscribersFromListsByQuery, sourceListIDs, c.db, subStatus, pq.Array(targetListIDs))
 	if err != nil {
 		c.log.Printf("error unsubscribing from lists by query: %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError,
+			c.i18n.Ts("globals.messages.errorUpdating", "name", "{globals.terms.subscribers}", "error", pqErrMsg(err)))
+	}
+
+	return nil
+}
+
+// UpdateSubscriberAttribsByQuery merges the given JSON attribs into subscribers matching an arbitrary query.
+func (c *Core) UpdateSubscriberAttribsByQuery(searchStr, queryExp string, listIDs []int, subStatus string, attribs json.RawMessage) error {
+	if listIDs == nil {
+		listIDs = []int{}
+	}
+
+	err := c.q.ExecSubQueryTpl(searchStr, queryExp, c.q.UpdateSubscriberAttribsByQuery, listIDs, c.db, subStatus, string(attribs))
+	if err != nil {
+		c.log.Printf("error updating subscriber attribs by query: %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError,
 			c.i18n.Ts("globals.messages.errorUpdating", "name", "{globals.terms.subscribers}", "error", pqErrMsg(err)))
 	}
