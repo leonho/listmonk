@@ -350,7 +350,7 @@ import ListSelector from '../components/ListSelector.vue';
 import Media from './Media.vue';
 
 // [FORK] Key used in campaign attribs to store subscriber attribute filter.
-const SUB_FILTER_KEY = '_subscriber_filter';
+const SUB_FILTER_KEY = 'subscriberFilter';
 
 export default Vue.extend({
   components: {

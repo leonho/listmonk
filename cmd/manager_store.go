@@ -92,7 +92,7 @@ func filterSubscribersByAttribs(subs []models.Subscriber, campAttribs models.JSO
 	if campAttribs == nil {
 		return subs
 	}
-	filterRaw, ok := campAttribs["_subscriber_filter"]
+	filterRaw, ok := campAttribs["subscriberFilter"]
 	if !ok {
 		return subs
 	}
