@@ -91,9 +91,9 @@
                   <b-field v-if="isAttribFilterVisible || form.subscriberAttribFilterStr !== '{}'"
                     label="Subscriber attribute filter"
                     label-position="on-border"
-                    message="Only send to subscribers matching these attributes. e.g. {&quot;segment&quot;: &quot;hot&quot;}">
+                    message="Include: {&quot;segment&quot;: &quot;hot&quot;} or {&quot;segment&quot;: [&quot;hot&quot;, &quot;warm&quot;]}. Exclude: {&quot;!segment&quot;: [&quot;cold&quot;, &quot;cool&quot;]}">
                     <b-input v-model="form.subscriberAttribFilterStr" type="textarea" rows="2"
-                      placeholder="{&quot;segment&quot;: &quot;hot&quot;}"
+                      placeholder="{&quot;!segment&quot;: [&quot;cold&quot;, &quot;cool&quot;]}"
                       :disabled="!canEdit" />
                   </b-field>
                 </div>
