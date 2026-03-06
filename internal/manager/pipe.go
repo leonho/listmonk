@@ -86,6 +86,15 @@ func (p *pipe) NextSubscribers() (bool, error) {
 		return false, nil
 	}
 
+	// [FORK] Post-filter by subscriber attributes if campaign has a subscriberFilter.
+	// The DB cursor (last_subscriber_id) has already advanced past this batch,
+	// so even if all subscribers are filtered out, we must return true to signal
+	// that there may be more subscribers in the next batch range.
+	subs = filterSubscribersByAttribs(subs, p.camp.Attribs)
+	if len(subs) == 0 {
+		return true, nil
+	}
+
 	// Is there a sliding window limit configured?
 	hasSliding := p.m.cfg.SlidingWindow &&
 		p.m.cfg.SlidingWindowRate > 0 &&
