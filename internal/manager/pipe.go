@@ -20,6 +20,9 @@ type pipe struct {
 	stopped    atomic.Bool
 	withErrors atomic.Bool
 
+	// [FORK] Track consecutive batch fetch errors to detect persistent failures.
+	batchErrors atomic.Int32
+
 	m *Manager
 }
 

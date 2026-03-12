@@ -280,14 +280,34 @@ func (m *Manager) Run() {
 		has, err := p.NextSubscribers()
 		if err != nil {
 			m.log.Printf("error processing campaign batch (%s): %v", p.camp.Name, err)
+
+			// [FORK] Re-queue the pipe on error instead of dropping it.
+			// Without this, a single transient DB error orphans the pipe:
+			// it stays in m.pipes (blocking scanCampaigns from re-picking it)
+			// but is never re-queued or completed, leaving the campaign stuck
+			// in "running" forever. Give up after 3 consecutive errors.
+			if count := p.batchErrors.Add(1); count >= 3 {
+				m.log.Printf("too many consecutive batch errors (%d) for campaign (%s), pausing", count, p.camp.Name)
+				p.Stop(true)
+				p.wg.Done()
+			} else {
+				select {
+				case m.nextPipes <- p:
+				default:
+				}
+			}
 			continue
 		}
+
+		// Reset consecutive error counter on success.
+		p.batchErrors.Store(0)
 
 		if has {
 			// There are more subscribers to fetch. Queue again.
 			select {
 			case m.nextPipes <- p:
 			default:
+				m.log.Printf("warning: campaign pipe queue is full, dropping campaign (%s) — will be re-picked on next scan", p.camp.Name)
 			}
 		} else {
 			// The pipe is created with a +1 on the waitgroup pseudo counter
