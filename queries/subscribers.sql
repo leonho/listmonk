@@ -398,7 +398,9 @@ UPDATE subscriber_lists SET status='unsubscribed', updated_at=NOW()
 -- name: update-subscriber-attribs-by-query
 -- raw: true
 WITH subs AS (%query%)
-UPDATE subscribers SET attribs = attribs || $5::jsonb, updated_at=NOW()
+-- Merge into an object even when attribs is JSON null: null || object yields an array,
+-- which models.JSON cannot scan (breaks subscriber reads and campaign batches).
+UPDATE subscribers SET attribs = COALESCE(NULLIF(attribs, 'null'::jsonb), '{}'::jsonb) || $5::jsonb, updated_at=NOW()
     WHERE id = ANY(SELECT id FROM subs);
 
 -- privacy
